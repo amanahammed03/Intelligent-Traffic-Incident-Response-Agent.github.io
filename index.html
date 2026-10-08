@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Traffic Incident Response Agent</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #f39c12;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: #ffffff;
+            text-align: center;
+            padding: 2.5rem 1rem;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+        }
+
+        header p {
+            color: var(--accent);
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            margin-top: 8px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--accent);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .demo-section {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #d35400;
+        }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #eef2f7;
+            text-align: left;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 120px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 0.9rem;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Intelligent Traffic Incident Response Agent</h1>
+        <p>DETECT • ANALYZE • DECIDE • ACT • MONITOR • ADAPT</p>
+    </header>
+
+    <div class="container">
+        <!-- Overview Cards -->
+        <div class="grid">
+            <div class="card">
+                <h3>Autonomous Agent Loop</h3>
+                <p>Unlike basic navigation tools, this AI agent continuously monitors real-time feedback and adapts decisions dynamically as conditions evolve.</p>
+            </div>
+            <div class="card">
+                <h3>Key Capabilities</h3>
+                <ul>
+                    <li>Incident Classification</li>
+                    <li>Severity Factor Estimation</li>
+                    <li>Dynamic Rerouting</li>
+                    <li>Adaptive Monitoring</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Live Simulation Demo -->
+        <div class="demo-section">
+            <h2>Interactive Agent Demo</h2>
+            <p>Simulate real-world traffic incidents and observe the agent adapt in real time.</p>
+            
+            <button onclick="runStep1()">1. Trigger Accident on Road A</button>
+            <button onclick="runStep2()">2. Congest Route B (Adapt)</button>
+            <button onclick="resetDemo()">Reset</button>
+
+            <div class="status-box" id="agentConsole">System initialized. Click a button to simulate an event.</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Project by Aman Ahammed Musliyarakam</p>
+    </footer>
+
+    <script>
+        const consoleEl = document.getElementById('agentConsole');
+
+        function runStep1() {
+            consoleEl.innerHTML = 
+`[PERCEPTION] 🚨 Incident Detected: Road Accident on Road A (Severity: HIGH)
+[ANALYSIS] Calculating impact factor... Score: 1.2 (CRITICAL)
+[DECISION] Evaluating alternative routes:
+ -> Road A: 35.0 mins (INJURED/ACCIDENT PENALTY)
+ -> Route B: 12.0 mins (CLEAR)
+ -> Route C: 15.0 mins (CLEAR)
+[ACTION] ⚠️ RECOMMENDATION: Avoid Road A. Route B is currently recommended.`;
+        }
+
+        function runStep2() {
+            consoleEl.innerHTML = 
+`[MONITORING] Checking live traffic feedback...
+[UPDATE] Route B congestion increased to 2.2x due to redirected traffic.
+[ANALYSIS] Re-evaluating optimal routes:
+ -> Route B: 26.4 mins (HEAVY CONGESTION)
+ -> Route C: 15.0 mins (CLEAR)
+[ADAPTATION] 🔄 Condition Change Detected!
+[ACTION] ⚠️ UPDATED RECOMMENDATION: Route B is now congested. Reroute via Route C.`;
+        }
+
+        function resetDemo() {
+            consoleEl.innerHTML = "System reset. Waiting for traffic incident inputs...";
+        }
+    </script>
+
+</body>
+</html>
