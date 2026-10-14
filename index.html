@@ -9,8 +9,11 @@
             --primary: #1a252f;
             --accent: #f39c12;
             --danger: #e74c3c;
+            --warning: #e67e22;
+            --info: #3498db;
             --success: #2ecc71;
             --bg: #f4f6f7;
+            --card-bg: #ffffff;
         }
 
         body {
@@ -19,17 +22,28 @@
             margin: 0;
             padding: 0;
             color: #333;
+            line-height: 1.6;
         }
 
         header {
             background-color: var(--primary);
             color: white;
             text-align: center;
-            padding: 1.5rem;
+            padding: 1.8rem 1rem;
         }
 
-        header h1 { margin: 0; font-size: 1.8rem; }
-        header p { color: var(--accent); margin: 5px 0 0; font-weight: bold; }
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        header p {
+            color: var(--accent);
+            margin: 6px 0 0;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 0.95rem;
+        }
 
         .container {
             max-width: 1000px;
@@ -41,30 +55,38 @@
             display: flex;
             gap: 10px;
             justify-content: center;
-            margin-bottom: 15px;
+            margin-bottom: 18px;
             flex-wrap: wrap;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 11px 18px;
+            font-size: 13px;
             font-weight: bold;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
         }
 
         .btn-accident { background: var(--danger); color: white; }
-        .btn-congest { background: #e67e22; color: white; }
+        .btn-traffic { background: var(--info); color: white; }
+        .btn-work { background: var(--warning); color: white; }
+        .btn-congest { background: #8e44ad; color: white; }
         .btn-reset { background: #7f8c8d; color: white; }
-        button:hover { opacity: 0.85; }
 
         .simulation-container {
             position: relative;
             background: #2c3e50;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         canvas {
@@ -74,16 +96,25 @@
         }
 
         .console-box {
-            background: #111;
-            color: #00ff66;
+            background: #0d1117;
+            color: #38bdf8;
             font-family: 'Courier New', Courier, monospace;
             padding: 15px;
             border-radius: 6px;
             margin-top: 15px;
-            height: 100px;
+            height: 110px;
             overflow-y: auto;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             line-height: 1.4;
+            border: 1px solid #30363d;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            margin-top: 30px;
         }
     </style>
 </head>
@@ -91,41 +122,60 @@
 
     <header>
         <h1>Intelligent Traffic Incident Response Agent</h1>
-        <p>RIGA SIMULATION: DETECT • ANALYZE • DECIDE • ACT • ADAPT</p>
+        <p>RIGA SIMULATION: DETECT • ANALYZE • DECIDE • ACT • MONITOR • ADAPT</p>
     </header>
 
     <div class="container">
+        <!-- Interactive Controls -->
         <div class="controls">
-            <button class="btn-accident" onclick="triggerAccident()">💥 1. Trigger Crash (Main Highway)</button>
-            <button class="btn-congest" onclick="congestDiversion()">🚗 2. Congest Bypass Road B</button>
-            <button class="btn-reset" onclick="resetSimulation()">🔄 Reset Simulation</button>
+            <button class="btn-accident" onclick="triggerAccident()">💥 1. Accident (Dispatch Police)</button>
+            <button class="btn-traffic" onclick="triggerHeavyTraffic()">🚗 2. Heavy Traffic (Auto-Reroute)</button>
+            <button class="btn-work" onclick="triggerRoadwork()">🚧 3. Road Work (Auto-Reroute)</button>
+            <button class="btn-congest" onclick="congestDiversion()">📈 4. Congest Bypass B (Adapt to C)</button>
+            <button class="btn-reset" onclick="resetSimulation()">🔄 Reset</button>
         </div>
 
+        <!-- Canvas Simulation Area -->
         <div class="simulation-container">
             <canvas id="trafficCanvas"></canvas>
         </div>
 
+        <!-- Real-time Console Log Output -->
         <div class="console-box" id="agentLogs">
             [AGENT INIT] Monitoring Riga main corridor traffic flow...
         </div>
     </div>
 
+    <footer>
+        <p>Intelligent Traffic Incident Response Agent Project</p>
+    </footer>
+
+    <!-- Embedded JavaScript Code -->
     <script>
         const canvas = document.getElementById('trafficCanvas');
         const ctx = canvas.getContext('2d');
         const logBox = document.getElementById('agentLogs');
 
-        // Resize Canvas
         canvas.width = 900;
         canvas.height = 400;
 
-        let crashActive = false;
+        // System States
+        let incidentState = 'NORMAL'; // 'NORMAL', 'ACCIDENT', 'ROADWORK', 'HEAVY_TRAFFIC'
         let bypassCongested = false;
         let currentRoute = 'Main Highway (Road A)';
 
-        // Cars Array
+        // Emergency Police Vehicle
+        let policeCar = {
+            active: false,
+            x: -100,
+            y: 135,
+            speed: 5,
+            sirenFlash: false
+        };
+
+        // Civilian Cars Setup
         let cars = [];
-        const numCars = 18;
+        const numCars = 22;
 
         class Car {
             constructor(id, speed) {
@@ -135,29 +185,30 @@
             }
 
             reset() {
-                this.x = Math.random() * -300;
+                this.x = Math.random() * -400;
                 this.route = 'A'; // 'A' = Main, 'B' = Bypass 1, 'C' = Bypass 2
-                this.lane = Math.floor(Math.random() * 3); // 3-lane main road
+                this.lane = Math.floor(Math.random() * 3);
                 this.y = 120 + (this.lane * 25);
-                this.color = ['#3498db', '#f1c40f', '#ecf0f1', '#9b59b6'][Math.floor(Math.random() * 4)];
+                this.color = ['#3498db', '#f1c40f', '#ecf0f1', '#9b59b6', '#1abc9c'][Math.floor(Math.random() * 5)];
             }
 
             move() {
-                if (crashActive && this.route === 'A' && this.x > 320 && this.x < 400) {
-                    // Stop before crash zone on Main Road
-                    return;
+                // Stop behind obstacles on Main Road (Road A)
+                if ((incidentState === 'ACCIDENT' || incidentState === 'ROADWORK' || incidentState === 'HEAVY_TRAFFIC') 
+                    && this.route === 'A' && this.x > 310 && this.x < 400) {
+                    return; // Stopped in traffic or behind accident/roadwork
                 }
 
+                // Heavy Congestion on Bypass B slows cars down
                 if (bypassCongested && this.route === 'B' && this.x > 350 && this.x < 550) {
-                    // Slow down drastically on Bypass B
                     this.x += this.speed * 0.2;
                 } else {
                     this.x += this.speed;
                 }
 
-                // Route switching logic at Diversion Point (X = 250)
-                if (Math.abs(this.x - 250) < 3) {
-                    if (currentRoute === 'Route B (Bypass)') {
+                // Automatic Rerouting Logic at Decision Junction (X = 250)
+                if (Math.abs(this.x - 250) < 4) {
+                    if (currentRoute === 'Route B (Bypass 1)') {
                         this.route = 'B';
                     } else if (currentRoute === 'Route C (Secondary Sub-road)') {
                         this.route = 'C';
@@ -166,16 +217,15 @@
                     }
                 }
 
-                // Update Y coordinates based on route divergence
+                // Dynamic Y Coordinate adjustments for turning into sub-roads
                 if (this.route === 'B') {
-                    if (this.x > 250 && this.x < 350 && this.y > 50) this.y -= 2; // Turn up to sub-road B
-                    if (this.x > 550 && this.x < 650 && this.y < 120) this.y += 2; // Rejoin main
+                    if (this.x > 250 && this.x < 350 && this.y > 60) this.y -= 2;
+                    if (this.x > 550 && this.x < 650 && this.y < 120) this.y += 2;
                 } else if (this.route === 'C') {
-                    if (this.x > 250 && this.x < 350 && this.y < 320) this.y += 3; // Turn down to sub-road C
-                    if (this.x > 550 && this.x < 650 && this.y > 170) this.y -= 3; // Rejoin main
+                    if (this.x > 250 && this.x < 350 && this.y < 320) this.y += 3;
+                    if (this.x > 550 && this.x < 650 && this.y > 170) this.y -= 3;
                 }
 
-                // Loop around when passing edge of screen
                 if (this.x > canvas.width + 50) {
                     this.reset();
                 }
@@ -191,7 +241,7 @@
             }
         }
 
-        // Initialize Cars
+        // Initialize Civilian Cars
         for (let i = 0; i < numCars; i++) {
             cars.push(new Car(i, 2 + Math.random() * 1.5));
         }
@@ -201,67 +251,87 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
+        // --- CONTROLLER FUNCTIONS ---
+
         function triggerAccident() {
-            crashActive = true;
+            incidentState = 'ACCIDENT';
+            policeCar.active = true;
+            policeCar.x = -60;
             logMessage(`[PERCEPTION] 🚨 ACCIDENT DETECTED on Main Highway (Road A)!`);
-            logMessage(`[ANALYSIS] Traffic blockage high. Evaluating diversions...`);
+            logMessage(`[ACTION] 🚓 Emergency police vehicle dispatched to crash site.`);
             
             setTimeout(() => {
-                currentRoute = 'Route B (Bypass)';
-                logMessage(`[DECISION & ACT] ⚠️ AI Agent dynamically rerouting traffic to Route B (Sub-road 1).`);
+                currentRoute = 'Route B (Bypass 1)';
+                logMessage(`[DECISION & ACT] ⚠️ AI Agent automatically rerouting oncoming traffic to Route B.`);
+            }, 1200);
+        }
+
+        function triggerHeavyTraffic() {
+            incidentState = 'HEAVY_TRAFFIC';
+            logMessage(`[PERCEPTION] 🚗⚡ HEAVY TRAFFIC DETECTED on Main Highway (Road A). Road capacity exceeded.`);
+            
+            setTimeout(() => {
+                currentRoute = 'Route B (Bypass 1)';
+                logMessage(`[DECISION & ACT] 🔄 Automated Reroute: Traffic diverted to Route B to relieve congestion.`);
+            }, 1000);
+        }
+
+        function triggerRoadwork() {
+            incidentState = 'ROADWORK';
+            logMessage(`[PERCEPTION] 🚧 ROADWORK / CONSTRUCTION DETECTED on Main Highway (Road A). Lanes obstructed.`);
+            
+            setTimeout(() => {
+                currentRoute = 'Route B (Bypass 1)';
+                logMessage(`[DECISION & ACT] ⚠️ Automated Reroute: Rerouting traffic via Route B around construction area.`);
             }, 1000);
         }
 
         function congestDiversion() {
-            if (!crashActive) {
-                alert("Trigger an accident first to test the adaptive rerouting!");
+            if (incidentState === 'NORMAL') {
+                alert("Trigger an incident first (Accident, Heavy Traffic, or Roadwork)!");
                 return;
             }
             bypassCongested = true;
-            logMessage(`[MONITORING] 📈 Traffic build-up detected on Route B! Congestion index high.`);
+            logMessage(`[MONITORING] 📈 Bypass Route B is now experiencing heavy secondary congestion!`);
             
             setTimeout(() => {
                 currentRoute = 'Route C (Secondary Sub-road)';
-                logMessage(`[ADAPTATION] 🔄 AI Agent adapts response! Rerouting traffic via Route C (Sub-road 2).`);
+                logMessage(`[ADAPTATION] 🔄 AI Agent adapts response! Rerouting traffic to Route C (Sub-road 2).`);
             }, 1000);
         }
 
         function resetSimulation() {
-            crashActive = false;
+            incidentState = 'NORMAL';
             bypassCongested = false;
+            policeCar.active = false;
+            policeCar.x = -100;
             currentRoute = 'Main Highway (Road A)';
             cars.forEach(car => car.reset());
-            logMessage(`[RESET] Traffic cleared. Agent monitoring normal operations.`);
+            logMessage(`[RESET] All road conditions cleared. Agent monitoring normal operations.`);
         }
 
-        // Main Animation Loop
+        // --- ANIMATION LOOP ---
+
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // --- DRAW ROADS ---
+            // 1. DRAW ROAD LAYOUT
             ctx.fillStyle = '#34495e';
-            // Main 3-lane Highway
-            ctx.fillRect(0, 110, canvas.width, 80);
-            
-            // Sub-road B (Top Bypass)
-            ctx.fillRect(250, 40, 400, 40);
-            
-            // Sub-road C (Bottom Bypass)
-            ctx.fillRect(250, 310, 400, 40);
+            ctx.fillRect(0, 110, canvas.width, 80); // Main 3-Lane Highway
+            ctx.fillRect(250, 40, 400, 40);   // Sub-road B
+            ctx.fillRect(250, 310, 400, 40);  // Sub-road C
 
-            // Connectors
+            // Connecting Lanes
             ctx.beginPath();
             ctx.strokeStyle = '#34495e';
             ctx.lineWidth = 40;
-            // To Route B
             ctx.moveTo(250, 150); ctx.lineTo(350, 60);
             ctx.moveTo(550, 60); ctx.lineTo(650, 150);
-            // To Route C
             ctx.moveTo(250, 150); ctx.lineTo(350, 330);
             ctx.moveTo(550, 330); ctx.lineTo(650, 150);
             ctx.stroke();
 
-            // Lane Markings
+            // Dash Markings
             ctx.strokeStyle = '#f1c40f';
             ctx.lineWidth = 2;
             ctx.setLineDash([15, 15]);
@@ -269,30 +339,64 @@
             ctx.moveTo(0, 136); ctx.lineTo(canvas.width, 136);
             ctx.moveTo(0, 163); ctx.lineTo(canvas.width, 163);
             ctx.stroke();
-            ctx.setLineDash([]); // Reset dash
+            ctx.setLineDash([]);
 
-            // Draw Road Labels
+            // Road Labels
             ctx.fillStyle = '#fff';
             ctx.font = '12px Arial';
             ctx.fillText('Main Highway (Road A)', 20, 100);
             ctx.fillText('Route B (Bypass 1)', 380, 30);
             ctx.fillText('Route C (Bypass 2)', 380, 370);
 
-            // --- DRAW ACCIDENT ---
-            if (crashActive) {
-                // Damaged cars
+            // 2. DRAW INCIDENTS & OBSTACLES
+            if (incidentState === 'ACCIDENT') {
+                // Crashed Cars
                 ctx.fillStyle = '#e74c3c';
                 ctx.fillRect(400, 130, 24, 12);
                 ctx.fillStyle = '#c0392b';
                 ctx.fillRect(415, 134, 24, 12);
                 
-                // Warning symbol
                 ctx.fillStyle = '#f39c12';
-                ctx.font = '20px Arial';
-                ctx.fillText('💥 ACCIDENT', 380, 115);
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText('💥 CRASH SITE', 380, 115);
+            } else if (incidentState === 'ROADWORK') {
+                // Construction Barriers
+                ctx.fillStyle = '#e67e22';
+                for (let i = 0; i < 4; i++) {
+                    ctx.fillRect(390 + (i * 20), 125 + (i % 2 * 20), 12, 16);
+                }
+                ctx.fillStyle = '#f1c40f';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText('🚧 ROAD WORK', 380, 115);
+            } else if (incidentState === 'HEAVY_TRAFFIC') {
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText('🚗⚡ HEAVY CONGESTION', 360, 115);
             }
 
-            // --- UPDATE & DRAW CARS ---
+            // 3. MOVE & DRAW POLICE CAR
+            if (policeCar.active) {
+                if (policeCar.x < 360) {
+                    policeCar.x += policeCar.speed;
+                }
+                
+                // Draw Police Car Body
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(policeCar.x, policeCar.y, 26, 12);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(policeCar.x + 8, policeCar.y, 10, 12); // Door panel
+                
+                // Flashing Siren Lights
+                policeCar.sirenFlash = !policeCar.sirenFlash;
+                ctx.fillStyle = policeCar.sirenFlash ? '#ff0000' : '#0000ff';
+                ctx.fillRect(policeCar.x + 10, policeCar.y - 4, 6, 4);
+
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 11px Arial';
+                ctx.fillText('POLICE 🚓', policeCar.x - 5, policeCar.y - 8);
+            }
+
+            // 4. MOVE & DRAW CIVILIAN CARS
             cars.forEach(car => {
                 car.move();
                 car.draw();
