@@ -3,177 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intelligent Traffic Incident Response Agent</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+    <title>Riga Intelligent Traffic Incident Response Agent</title>
+    <style>
+        :root {
+            --primary: #1a252f;
+            --accent: #f39c12;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --bg: #f4f6f7;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        header h1 { margin: 0; font-size: 1.8rem; }
+        header p { color: var(--accent); margin: 5px 0 0; font-weight: bold; }
+
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-accident { background: var(--danger); color: white; }
+        .btn-congest { background: #e67e22; color: white; }
+        .btn-reset { background: #7f8c8d; color: white; }
+        button:hover { opacity: 0.85; }
+
+        .simulation-container {
+            position: relative;
+            background: #2c3e50;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+        }
+
+        .console-box {
+            background: #111;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
 <body>
 
-<header>
-    <div>
-        <h1>🚦 Intelligent Traffic Incident Response Agent</h1>
-        <p>AI-powered traffic monitoring and adaptive route decision system</p>
+    <header>
+        <h1>Intelligent Traffic Incident Response Agent</h1>
+        <p>RIGA SIMULATION: DETECT • ANALYZE • DECIDE • ACT • ADAPT</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <button class="btn-accident" onclick="triggerAccident()">💥 1. Trigger Crash (Main Highway)</button>
+            <button class="btn-congest" onclick="congestDiversion()">🚗 2. Congest Bypass Road B</button>
+            <button class="btn-reset" onclick="resetSimulation()">🔄 Reset Simulation</button>
+        </div>
+
+        <div class="simulation-container">
+            <canvas id="trafficCanvas"></canvas>
+        </div>
+
+        <div class="console-box" id="agentLogs">
+            [AGENT INIT] Monitoring Riga main corridor traffic flow...
+        </div>
     </div>
 
-    <div class="agent-status">
-        <span class="status-dot"></span>
-        <span id="agentStatus">AGENT ONLINE</span>
-    </div>
-</header>
+    <script>
+        const canvas = document.getElementById('trafficCanvas');
+        const ctx = canvas.getContext('2d');
+        const logBox = document.getElementById('agentLogs');
 
-<main>
+        // Resize Canvas
+        canvas.width = 900;
+        canvas.height = 400;
 
-    <!-- Dashboard -->
-    <section class="dashboard">
+        let crashActive = false;
+        let bypassCongested = false;
+        let currentRoute = 'Main Highway (Road A)';
 
-        <div class="card">
-            <h3>🚨 Current Incident</h3>
-            <p id="incident">No incident detected</p>
-        </div>
+        // Cars Array
+        let cars = [];
+        const numCars = 18;
 
-        <div class="card">
-            <h3>⚠️ Severity</h3>
-            <p id="severity">Normal</p>
-        </div>
+        class Car {
+            constructor(id, speed) {
+                this.id = id;
+                this.speed = speed;
+                this.reset();
+            }
 
-        <div class="card">
-            <h3>🚗 Traffic Density</h3>
-            <p id="traffic">Normal</p>
-        </div>
+            reset() {
+                this.x = Math.random() * -300;
+                this.route = 'A'; // 'A' = Main, 'B' = Bypass 1, 'C' = Bypass 2
+                this.lane = Math.floor(Math.random() * 3); // 3-lane main road
+                this.y = 120 + (this.lane * 25);
+                this.color = ['#3498db', '#f1c40f', '#ecf0f1', '#9b59b6'][Math.floor(Math.random() * 4)];
+            }
 
-        <div class="card">
-            <h3>🧠 AI Recommendation</h3>
-            <p id="recommendation">All roads are operating normally.</p>
-        </div>
+            move() {
+                if (crashActive && this.route === 'A' && this.x > 320 && this.x < 400) {
+                    // Stop before crash zone on Main Road
+                    return;
+                }
 
-    </section>
+                if (bypassCongested && this.route === 'B' && this.x > 350 && this.x < 550) {
+                    // Slow down drastically on Bypass B
+                    this.x += this.speed * 0.2;
+                } else {
+                    this.x += this.speed;
+                }
 
-    <!-- Traffic Map -->
-    <section class="map-section">
+                // Route switching logic at Diversion Point (X = 250)
+                if (Math.abs(this.x - 250) < 3) {
+                    if (currentRoute === 'Route B (Bypass)') {
+                        this.route = 'B';
+                    } else if (currentRoute === 'Route C (Secondary Sub-road)') {
+                        this.route = 'C';
+                    } else {
+                        this.route = 'A';
+                    }
+                }
 
-        <h2>🗺️ Traffic Network</h2>
+                // Update Y coordinates based on route divergence
+                if (this.route === 'B') {
+                    if (this.x > 250 && this.x < 350 && this.y > 50) this.y -= 2; // Turn up to sub-road B
+                    if (this.x > 550 && this.x < 650 && this.y < 120) this.y += 2; // Rejoin main
+                } else if (this.route === 'C') {
+                    if (this.x > 250 && this.x < 350 && this.y < 320) this.y += 3; // Turn down to sub-road C
+                    if (this.x > 550 && this.x < 650 && this.y > 170) this.y -= 3; // Rejoin main
+                }
 
-        <div class="map">
+                // Loop around when passing edge of screen
+                if (this.x > canvas.width + 50) {
+                    this.reset();
+                }
+            }
 
-            <div class="road road-a" id="roadA">
-                <span>ROAD A</span>
-                <small id="roadAStatus">NORMAL</small>
-            </div>
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, 24, 12);
+                // Headlights
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x + 20, this.y + 2, 4, 3);
+                ctx.fillRect(this.x + 20, this.y + 7, 4, 3);
+            }
+        }
 
-            <div class="road road-b" id="roadB">
-                <span>ROAD B</span>
-                <small id="roadBStatus">NORMAL</small>
-            </div>
+        // Initialize Cars
+        for (let i = 0; i < numCars; i++) {
+            cars.push(new Car(i, 2 + Math.random() * 1.5));
+        }
 
-            <div class="road road-c" id="roadC">
-                <span>ROAD C</span>
-                <small id="roadCStatus">NORMAL</small>
-            </div>
+        function logMessage(msg) {
+            logBox.innerHTML += `<br>${msg}`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
 
-            <div class="intersection">🚦</div>
+        function triggerAccident() {
+            crashActive = true;
+            logMessage(`[PERCEPTION] 🚨 ACCIDENT DETECTED on Main Highway (Road A)!`);
+            logMessage(`[ANALYSIS] Traffic blockage high. Evaluating diversions...`);
+            
+            setTimeout(() => {
+                currentRoute = 'Route B (Bypass)';
+                logMessage(`[DECISION & ACT] ⚠️ AI Agent dynamically rerouting traffic to Route B (Sub-road 1).`);
+            }, 1000);
+        }
 
-        </div>
+        function congestDiversion() {
+            if (!crashActive) {
+                alert("Trigger an accident first to test the adaptive rerouting!");
+                return;
+            }
+            bypassCongested = true;
+            logMessage(`[MONITORING] 📈 Traffic build-up detected on Route B! Congestion index high.`);
+            
+            setTimeout(() => {
+                currentRoute = 'Route C (Secondary Sub-road)';
+                logMessage(`[ADAPTATION] 🔄 AI Agent adapts response! Rerouting traffic via Route C (Sub-road 2).`);
+            }, 1000);
+        }
 
-    </section>
+        function resetSimulation() {
+            crashActive = false;
+            bypassCongested = false;
+            currentRoute = 'Main Highway (Road A)';
+            cars.forEach(car => car.reset());
+            logMessage(`[RESET] Traffic cleared. Agent monitoring normal operations.`);
+        }
 
-    <!-- Controls -->
-    <section class="controls">
+        // Main Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        <h2>🎮 Agent Simulation</h2>
+            // --- DRAW ROADS ---
+            ctx.fillStyle = '#34495e';
+            // Main 3-lane Highway
+            ctx.fillRect(0, 110, canvas.width, 80);
+            
+            // Sub-road B (Top Bypass)
+            ctx.fillRect(250, 40, 400, 40);
+            
+            // Sub-road C (Bottom Bypass)
+            ctx.fillRect(250, 310, 400, 40);
 
-        <div class="buttons">
+            // Connectors
+            ctx.beginPath();
+            ctx.strokeStyle = '#34495e';
+            ctx.lineWidth = 40;
+            // To Route B
+            ctx.moveTo(250, 150); ctx.lineTo(350, 60);
+            ctx.moveTo(550, 60); ctx.lineTo(650, 150);
+            // To Route C
+            ctx.moveTo(250, 150); ctx.lineTo(350, 330);
+            ctx.moveTo(550, 330); ctx.lineTo(650, 150);
+            ctx.stroke();
 
-            <button onclick="resetSimulation()">
-                🔄 Reset Traffic
-            </button>
+            // Lane Markings
+            ctx.strokeStyle = '#f1c40f';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([15, 15]);
+            ctx.beginPath();
+            ctx.moveTo(0, 136); ctx.lineTo(canvas.width, 136);
+            ctx.moveTo(0, 163); ctx.lineTo(canvas.width, 163);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
 
-            <button onclick="createAccident()">
-                🚨 Simulate Accident
-            </button>
+            // Draw Road Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Main Highway (Road A)', 20, 100);
+            ctx.fillText('Route B (Bypass 1)', 380, 30);
+            ctx.fillText('Route C (Bypass 2)', 380, 370);
 
-            <button onclick="congestRouteB()">
-                🚗 Congest Route B
-            </button>
+            // --- DRAW ACCIDENT ---
+            if (crashActive) {
+                // Damaged cars
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(400, 130, 24, 12);
+                ctx.fillStyle = '#c0392b';
+                ctx.fillRect(415, 134, 24, 12);
+                
+                // Warning symbol
+                ctx.fillStyle = '#f39c12';
+                ctx.font = '20px Arial';
+                ctx.fillText('💥 ACCIDENT', 380, 115);
+            }
 
-            <button onclick="agentReplan()">
-                🧠 Agent Re-Analyze
-            </button>
+            // --- UPDATE & DRAW CARS ---
+            cars.forEach(car => {
+                car.move();
+                car.draw();
+            });
 
-            <button class="demo-button" onclick="runFullDemo()">
-                ▶️ Run Full Demo
-            </button>
+            requestAnimationFrame(animate);
+        }
 
-        </div>
-
-    </section>
-
-    <!-- Agent Thinking -->
-    <section class="agent-panel">
-
-        <h2>🧠 AI Agent Decision Process</h2>
-
-        <div class="steps">
-
-            <div class="step" id="step1">
-                <span>1</span>
-                <strong>Observe</strong>
-                <p>Receive traffic information</p>
-            </div>
-
-            <div class="step" id="step2">
-                <span>2</span>
-                <strong>Analyze</strong>
-                <p>Analyze incident and traffic</p>
-            </div>
-
-            <div class="step" id="step3">
-                <span>3</span>
-                <strong>Decide</strong>
-                <p>Select the best response</p>
-            </div>
-
-            <div class="step" id="step4">
-                <span>4</span>
-                <strong>Act</strong>
-                <p>Recommend an alternative</p>
-            </div>
-
-            <div class="step" id="step5">
-                <span>5</span>
-                <strong>Monitor</strong>
-                <p>Monitor new traffic data</p>
-            </div>
-
-            <div class="step" id="step6">
-                <span>6</span>
-                <strong>Adapt</strong>
-                <p>Change decision if needed</p>
-            </div>
-
-        </div>
-
-    </section>
-
-    <!-- Event Log -->
-    <section class="log-section">
-
-        <h2>📋 Agent Activity Log</h2>
-
-        <div id="log" class="log">
-            <p>[SYSTEM] AI Traffic Agent started.</p>
-            <p>[SYSTEM] Monitoring traffic network...</p>
-        </div>
-
-    </section>
-
-</main>
-
-<footer>
-    <p>Intelligent Traffic Incident Response Agent | AI Agent Practical Demo</p>
-    <p>Developed by Aman Ahammed Musliyarakam</p>
-</footer>
-
-<script src="script.js"></script>
-
+        animate();
+    </script>
 </body>
 </html>
